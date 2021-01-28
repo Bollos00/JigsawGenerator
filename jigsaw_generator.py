@@ -1,60 +1,114 @@
+"""
+Module jigsaw_generator
+
+Contains the class JigsawGenerator
+"""
 import os
 import random
 
-from PySide2.QtWidgets import QMainWindow, QFileDialog
-from PySide2.QtGui import QPixmap, QPainter
-from PySide2.QtCore import Qt, QPointF
+from PySide2.QtWidgets import QMainWindow, QFileDialog, QInputDialog, QColorDialog
+from PySide2.QtGui import QPixmap, QPainter, QPainterPath,  QColor
+from PySide2.QtCore import Qt, QPointF, QSize, QRect
+from PySide2.QtSvg import QSvgGenerator
+
 
 from ui_jigsaw_generator_main_window import Ui_JigsawGenerator
 from jigsaw_generator_core import JigsawGeneratorCore
 
 
 class JigsawGenerator(QMainWindow):
+    """
+    Summary.
 
-    def draw_borders(self, width, height, painter, pixmap):
-        painter.drawLine(0, 0, 0, height - 1)
-        painter.drawLine(0, 0, width - 1, 0)
-        painter.drawLine(0, height - 1, width - 1, height - 1)
-        painter.drawLine(width - 1, 0, width - 1, height - 1)
-        return painter, pixmap
+    More details
 
-    def paint_neutral(self, cell_coordinates, where, painter, pixmap):
-        begin, end = None, None
+    Attributes
+    ----------
+    ui: Ui_JigsawGenerator
+        Instance of the class Ui_JigsawGenerator.
 
-        if where == JigsawGeneratorCore.WhichBorder.DOWN:
-            y = int((cell_coordinates[1] + 1)*self.cell_height)
-            x_begin = int(cell_coordinates[0]*self.cell_width)
-            x_end = int((cell_coordinates[0] + 1)*self.cell_width)
-            begin, end = [x_begin, y], [x_end, y]
+    x: int
+        Number of rows of the Jigsaw.
+        Input from ui.spinBoxX.value()
 
-        elif where == JigsawGeneratorCore.WhichBorder.UP:
-            y = int(cell_coordinates[1]*self.cell_height)
-            x_begin = int(cell_coordinates[0]*self.cell_width)
-            x_end = int((cell_coordinates[0] + 1)*self.cell_width)
-            begin, end = [x_begin, y], [x_end, y]
+    y: int
+        Number of rows of the Jigsaw.
+        Input from ui.spinBoxY.value()
 
-        elif where == JigsawGeneratorCore.WhichBorder.LEFT:
-            x = int(cell_coordinates[0]*self.cell_width)
-            y_begin = int(cell_coordinates[1]*self.cell_height)
-            y_end = int((cell_coordinates[1] + 1)*self.cell_height)
-            begin, end = [x, y_begin], [x, y_end]
+    core: JigsawGeneratorCore
+        Instance of the JigsawGeneratorCore class.
 
-        elif where == JigsawGeneratorCore.WhichBorder.RIGHT:
-            x = int((cell_coordinates[0] + 1)*self.cell_width)
-            y_begin = int(cell_coordinates[1]*self.cell_height)
-            y_end = int((cell_coordinates[1] + 1)*self.cell_height)
-            begin, end = [x, y_begin], [x, y_end]
+    pen_color: QColor
+        Color of the pen used to draw the image and the SVG
 
-        painter.drawLine(begin[0], begin[1], end[0], end[1])
+    image_path: str
+        Absolute path to the image where the jigsaw will be built upon.
 
-        return painter, pixmap
+    cell_width: float
+        Float variable that indicates the width of each cell of the jigsaw on the image.
 
-    def paint_masculine(self, cell_coordinates, where, painter, pixmap):
+    cell_height: float
+        Float variable that indicates the height of each cell of the jigsaw on the image.
+    """
 
-        pattern = "Triangle"
+    @staticmethod
+    def draw_borders(width: int, height: int, painter: QPainter):
+        """
+        Draw a rectangular using the given painter with the dimensions passed as arguments.
+
+        When drawing on a QPixmap, pass the dimensions with one decreasing
+         one unit, for example:
+        ```
+        JigsawGenerator.draw_borders(w-1, h-1, painter)
+        ```
+
+        Parameters
+        ----------
+        width: int
+            The width of the draw.
+
+        height: int
+            The height of the draw
+
+        painter: QPainter
+            Element of the QPainter class used to paint the borders.
+        """
+        painter.drawLine(0, 0, 0, height)
+        painter.drawLine(0, 0, width, 0)
+        painter.drawLine(0, height, width, height)
+        painter.drawLine(width, 0, width, height)
+        return painter
+
+    @staticmethod
+    def paint_masculine(cell_coordinates, where, cell_width, cell_height, patterns, painter):
+        """
+        Draw the masculine border of one cell.
+
+        Parameters
+        ----------
+        cell_coordinates: List[int]
+            Coordinates [x, y] of the cell.
+
+        where: JigsawGeneratorCore.WhichBorder
+            Indicates which border will be painted.
+
+        cell_width: float
+            Indicates the width of each cell.
+
+        cell_height: float
+            Indicates the height of each cell.
+
+        patterns: List[str]
+            The patterns considered to paint the border.
+            Supported "Triangle" and "Square"
+
+        painter: QPainter
+            The QPainter element used to paint the borders
+        """
+        # TODO: Smooth the paths
+        pattern = random.choice(["Triangle", "Square"])
 
         if pattern == "Triangle":
-
             #          C  ---*
             #               / \
             #              /   \
@@ -67,125 +121,381 @@ class JigsawGenerator(QMainWindow):
 
             # parameters necessary to make the borders different between
             #  each other
-            b0, b1 = .3, .4
-            c0, c1 = .4, .5
+            b0, b1 = .3, .45
+            c0, c1 = .4, .6
             c2, c3 = .15, .25
-            d0, d1 = .6, .7
+            d0, d1 = .55, .7
             x0, x1 = -.05, .05
 
             if where == JigsawGeneratorCore.WhichBorder.DOWN:
-                y = (cell_coordinates[1] + 1)*self.cell_height
-                x_begin = cell_coordinates[0]*self.cell_width
+                y = (cell_coordinates[1] + 1)*cell_height
+                x_begin = cell_coordinates[0]*cell_width
                 A = QPointF(x_begin, y)
-                B = QPointF(x_begin + self.cell_width*random.uniform(b0, b1),
-                            y + self.cell_height*random.uniform(x0, x1))
-                C = QPointF(x_begin + self.cell_width*random.uniform(c0, c1),
-                            y + self.cell_height*random.uniform(c2, c3))
-                D = QPointF(x_begin + self.cell_width*random.uniform(d0, d1),
-                            y + self.cell_height*random.uniform(x0, x1))
-                E = QPointF(x_begin + self.cell_width, y)
+                B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+                            y + cell_height*random.uniform(x0, x1))
+                C = QPointF(x_begin + cell_width*random.uniform(c0, c1),
+                            y + cell_height*random.uniform(c2, c3))
+                D = QPointF(x_begin + cell_width*random.uniform(d0, d1),
+                            y + cell_height*random.uniform(x0, x1))
+                E = QPointF(x_begin + cell_width, y)
 
             elif where == JigsawGeneratorCore.WhichBorder.UP:
-                y = cell_coordinates[1]*self.cell_height
-                x_begin = cell_coordinates[0]*self.cell_width
+                y = cell_coordinates[1]*cell_height
+                x_begin = cell_coordinates[0]*cell_width
                 A = QPointF(x_begin, y)
-                B = QPointF(x_begin + self.cell_width*random.uniform(b0, b1),
-                            y + self.cell_height*random.uniform(x0, x1))
-                C = QPointF(x_begin + self.cell_width*random.uniform(c0, c1),
-                            y - self.cell_height*random.uniform(c2, c3))
-                D = QPointF(x_begin + self.cell_width*random.uniform(d0, d1),
-                            y + self.cell_height*random.uniform(x0, x1))
-                E = QPointF(x_begin + self.cell_width, y)
+                B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+                            y + cell_height*random.uniform(x0, x1))
+                C = QPointF(x_begin + cell_width*random.uniform(c0, c1),
+                            y - cell_height*random.uniform(c2, c3))
+                D = QPointF(x_begin + cell_width*random.uniform(d0, d1),
+                            y + cell_height*random.uniform(x0, x1))
+                E = QPointF(x_begin + cell_width, y)
 
             elif where == JigsawGeneratorCore.WhichBorder.LEFT:
-                x = cell_coordinates[0]*self.cell_width
-                y_begin = cell_coordinates[1]*self.cell_height
+                x = cell_coordinates[0]*cell_width
+                y_begin = cell_coordinates[1]*cell_height
                 A = QPointF(x, y_begin)
-                B = QPointF(x + self.cell_width*random.uniform(x0, x1),
-                            y_begin + self.cell_height*random.uniform(b0, b1))
-                C = QPointF(x - self.cell_width*random.uniform(c2, c3),
-                            y_begin + self.cell_height*random.uniform(c0, c1))
-                D = QPointF(x + self.cell_width*random.uniform(x0, x1),
-                            y_begin + self.cell_height*random.uniform(d0, d1))
-                E = QPointF(x, y_begin + self.cell_height)
+                B = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(b0, b1))
+                C = QPointF(x - cell_width*random.uniform(c2, c3),
+                            y_begin + cell_height*random.uniform(c0, c1))
+                D = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(d0, d1))
+                E = QPointF(x, y_begin + cell_height)
 
             elif where == JigsawGeneratorCore.WhichBorder.RIGHT:
-                x = (cell_coordinates[0] + 1)*self.cell_width
-                y_begin = cell_coordinates[1]*self.cell_height
+                x = (cell_coordinates[0] + 1)*cell_width
+                y_begin = cell_coordinates[1]*cell_height
                 A = QPointF(x, y_begin)
-                B = QPointF(x + self.cell_width*random.uniform(x0, x1),
-                            y_begin + self.cell_height*random.uniform(b0, b1))
-                C = QPointF(x + self.cell_width*random.uniform(c2, c3),
-                            y_begin + self.cell_height*random.uniform(c0, c1))
-                D = QPointF(x + self.cell_width*random.uniform(x0, x1),
-                            y_begin + self.cell_height*random.uniform(d0, d1))
-                E = QPointF(x, y_begin + self.cell_height)
+                B = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(b0, b1))
+                C = QPointF(x + cell_width*random.uniform(c2, c3),
+                            y_begin + cell_height*random.uniform(c0, c1))
+                D = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(d0, d1))
+                E = QPointF(x, y_begin + cell_height)
 
-            painter.drawLine(A, B)
-            painter.drawLine(B, C)
-            painter.drawLine(C, D)
-            painter.drawLine(D, E)
+            path = QPainterPath(A)
+            path.lineTo(B)
+            path.lineTo(C)
+            path.lineTo(D)
+            path.lineTo(E)
+            painter.drawPath(path)
+
+        elif pattern == "Square":
+            #         C * ________ * D
+            #            |       |
+            #            |       |
+            #            |       |
+            # ___________|       |___________
+            # |          |       |          |
+            # A          B       E          F
+
+            A, B, C, D, E, F = None, None, None, None, None, None
+
+            # parameters necessary to make the borders different between
+            #  each other
+            b0, b1 = .3, .45
+            c0, c1 = .15, .25
+            e0, e1 = .55, .7
+            x0, x1 = -.05, .05
+
+            if where == JigsawGeneratorCore.WhichBorder.DOWN:
+                y = (cell_coordinates[1] + 1)*cell_height
+                x_begin = cell_coordinates[0]*cell_width
+                A = QPointF(x_begin, y)
+                B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+                            y + cell_height*random.uniform(x0, x1))
+                C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+                            y + cell_height*random.uniform(c0, c1))
+                D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+                            y + cell_height*random.uniform(c0, c1))
+                E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+                            y + cell_height*random.uniform(x0, x1))
+                F = QPointF(x_begin + cell_width, y)
+
+            elif where == JigsawGeneratorCore.WhichBorder.UP:
+                y = cell_coordinates[1]*cell_height
+                x_begin = cell_coordinates[0]*cell_width
+                A = QPointF(x_begin, y)
+                B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+                            y + cell_height*random.uniform(x0, x1))
+                C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+                            y - cell_height*random.uniform(c0, c1))
+                D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+                            y - cell_height*random.uniform(c0, c1))
+                E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+                            y + cell_height*random.uniform(x0, x1))
+                F = QPointF(x_begin + cell_width, y)
+
+            elif where == JigsawGeneratorCore.WhichBorder.LEFT:
+                x = cell_coordinates[0]*cell_width
+                y_begin = cell_coordinates[1]*cell_height
+                A = QPointF(x, y_begin)
+                B = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(b0, b1))
+                C = QPointF(x - cell_width*random.uniform(c0, c1),
+                            y_begin + cell_height*random.uniform(b0, b1))
+                D = QPointF(x - cell_width*random.uniform(c0, c1),
+                            y_begin + cell_height*random.uniform(e0, e1))
+                E = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(e0, e1))
+                F = QPointF(x, y_begin + cell_height)
+
+            elif where == JigsawGeneratorCore.WhichBorder.RIGHT:
+                x = (cell_coordinates[0] + 1)*cell_width
+                y_begin = cell_coordinates[1]*cell_height
+                A = QPointF(x, y_begin)
+                B = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(b0, b1))
+                C = QPointF(x + cell_width*random.uniform(c0, c1),
+                            y_begin + cell_height*random.uniform(b0, b1))
+                D = QPointF(x + cell_width*random.uniform(c0, c1),
+                            y_begin + cell_height*random.uniform(e0, e1))
+                E = QPointF(x + cell_width*random.uniform(x0, x1),
+                            y_begin + cell_height*random.uniform(e0, e1))
+                F = QPointF(x, y_begin + cell_height)
+
+            path = QPainterPath(A)
+            path.lineTo(B)
+            path.lineTo(C)
+            path.lineTo(D)
+            path.lineTo(E)
+            path.lineTo(F)
+            painter.drawPath(path)
 
         elif pattern == "Circle":
             pass
-        elif pattern == "Squares":
-            pass
 
-        return painter, pixmap
+        return painter
 
     def draw_on_pixmap(self):
+        """
+        Draw the jigsaw on the pixmap located on `image_path`.
+
+        The pixmap which the jigsaw will be drawn upon uses a QPen of the color
+         `pen_color`, with number of rows `x` and number of lines `y`. The output
+          is saved on the label `ui.labelImage` when the process is finished.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the own class.
+        """
         self.load_image(self.image_path)
         pixmap = self.ui.labelImage.pixmap()
         painter = QPainter(pixmap)
-        painter.setPen(Qt.white)
+        painter.setPen(self.pen_color)
+        painter.setRenderHint(QPainter.Antialiasing, True)
 
-        self.draw_borders(pixmap.width(), pixmap.height(), painter, pixmap)
+        JigsawGenerator.draw_borders(pixmap.width() - 1, pixmap.height() - 1, painter)
+
+        patterns = ["Square", "Triangle"]
 
         for i in range(self.x):
             for j in range(self.y):
                 cell = self.core.get_cell([i, j])
 
-                # print('{0}, {1} : [{2}, {3}, {4}, {5}]'.format(i, j, cell.up, cell.down, cell.left, cell.right))
-
                 if cell.up == JigsawGeneratorCore.BorderType.MASCULINE:
-                    self.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.UP, painter, pixmap)
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.UP,
+                                                    self.cell_width, self.cell_height, patterns,
+                                                    painter)
                 if cell.down == JigsawGeneratorCore.BorderType.MASCULINE:
-                    self.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.DOWN, painter, pixmap)
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.DOWN,
+                                                    self.cell_width, self.cell_height, patterns,
+                                                    painter)
                 if cell.left == JigsawGeneratorCore.BorderType.MASCULINE:
-                    self.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.LEFT, painter, pixmap)
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.LEFT,
+                                                    self.cell_width, self.cell_height, patterns,
+                                                    painter)
                 if cell.right == JigsawGeneratorCore.BorderType.MASCULINE:
-                    self.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.RIGHT, painter, pixmap)
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.RIGHT,
+                                                    self.cell_width, self.cell_height, patterns,
+                                                    painter)
 
+        painter.end()
         self.ui.labelImage.setPixmap(pixmap)
 
-    def SLOT_generate(self):
-        # print("Generate called")
+    def draw_on_svg(self, width, height):
+        """
+        Generate a SVG jigsaw of the given width and height.
 
+        The SVG which the jigsaw will be drawn upon uses a QPen of the color
+         `pen_color`, with number of rows `x` and number of lines `y`.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the own class.
+
+        width: int
+            Width of the SVG.
+
+        height: int
+            Hieght of the SVG.
+        """
+        filename, filters = QFileDialog.getSaveFileName(
+            parent=self, caption="Save Image", filter="SVG (*.svg)",
+            selected_filter="output.svg"
+        )
+
+        generator = QSvgGenerator()
+        generator.setFileName(filename)
+        generator.setSize(QSize(width, height))
+        generator.setViewBox(QRect(0, 0, width, height))
+
+        painter = QPainter(generator)
+        painter.setPen(self.pen_color)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        JigsawGenerator.draw_borders(width, height, painter)
+
+        patterns = ["Square", "Triangle"]
+        cell_width = float(width)/self.x
+        cell_height = float(height)/self.y
+
+        for i in range(self.x):
+            for j in range(self.y):
+                cell = self.core.get_cell([i, j])
+
+                if cell.up == JigsawGeneratorCore.BorderType.MASCULINE:
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.UP,
+                                                    cell_width, cell_height, patterns,
+                                                    painter)
+                if cell.down == JigsawGeneratorCore.BorderType.MASCULINE:
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.DOWN,
+                                                    cell_width, cell_height, patterns,
+                                                    painter)
+                if cell.left == JigsawGeneratorCore.BorderType.MASCULINE:
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.LEFT,
+                                                    cell_width, cell_height, patterns,
+                                                    painter)
+                if cell.right == JigsawGeneratorCore.BorderType.MASCULINE:
+                    JigsawGenerator.paint_masculine([i, j], JigsawGeneratorCore.WhichBorder.RIGHT,
+                                                    cell_width, cell_height, patterns,
+                                                    painter)
+
+        painter.end()
+
+    def SLOT_generate_image(self):
+        """
+        Function called when `ui.pushButtonGenerateImage` is released.
+
+        It generates the jigsaw and update the pixmap of `ui.labelImage`
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+        """
         self.x = self.ui.spinBoxX.value()
         self.y = self.ui.spinBoxY.value()
         self.core.set_shape([self.x, self.y])
         self.core.generate_random()
         self.draw_on_pixmap()
 
+    def SLOT_generate_svg(self):
+        """
+        Function called when `ui.pushButtonGenerateSvg` is released.
+
+        It generates the jigsaw on a SVG file and export it to the
+         desired path.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+        """
+        width, ok = QInputDialog.getInt(
+            self, "Width", "Set width:",
+            self.ui.labelImage.pixmap().width()
+        )
+        height, ok = QInputDialog.getInt(
+            self, "Hieght", "Set height:",
+            self.ui.labelImage.pixmap().height()
+        )
+
+        self.draw_on_svg(width, height)
+
     def SLOT_load_image_dialog(self):
-        file_path, filter = QFileDialog.getOpenFileName(parent=self,
-                                                        caption="Load Image",
-                                                        filter="Images (*.png *.jpg *.jpeg *..gif *.bpm)")
+        """
+        Function called when `ui.pushButtonLoadImage` is released.
+
+        Create a `QFileDialog` and try to load a new file.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+        """
+        file_path, filter = QFileDialog.getOpenFileName(
+            parent=self,
+            caption="Load Image",
+            filter="Images (*.png *.jpg *.jpeg *..gif *.bpm)"
+        )
 
         if file_path and self.load_image(file_path):
             self.SLOT_generate()
 
     def SLOT_save_image_dialog(self):
-        file_path, filter = QFileDialog.getSaveFileName(parent=self,
-                                                        caption="Save Image",
-                                                        filter="Images (*.png *.jpg *.jpeg *..gif *.bpm)",
-                                                        selected_filter="output.png")
+        """
+        Function called when `ui.pushButtonSaveImage` is released.
+
+        Create a QFileDialog and try to save the generated pixmap
+         on the selected file.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+        """
+
+        file_path, filter = QFileDialog.getSaveFileName(
+            parent=self,
+            caption="Save Image",
+            filter="Images (*.png *.jpg *.jpeg *..gif *.bpm)",
+            selected_filter="output.png"
+        )
 
         if file_path:
             self.save_image(file_path)
 
 
+    def SLOT_select_pen_color_dialog(self):
+        """
+        Function called when ui.pushButtonPenColor is released.
+
+        Create a QColorDialog to select the color of the pen and update
+         the background of `ui.pushButtonPenColor` when finished.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+        """
+
+        self.pen_color = QColorDialog.getColor(
+            self.pen_color, self, "Select pen color"
+        )
+        self.ui.pushButtonPenColor.setStyleSheet(
+            "QPushButton {{ background-color: {} }}".format(str(self.pen_color.name()))
+        )
+
     def load_image(self, image_path):
+        """
+        Try to load the image on the given path.
+
+        Returns `True` if succeeded.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+
+        image_path: str
+            Path to the file
+        """
+
         pixmap = QPixmap(image_path)
 
         if pixmap.isNull():
@@ -200,6 +510,19 @@ class JigsawGenerator(QMainWindow):
         return True
 
     def save_image(self, image_path):
+        """
+        Try to save the image on the given path.
+
+        Returns `True` if succeeded.
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+
+        image_path: str
+            Path to the file
+        """
         pixmap = self.ui.labelImage.pixmap()
 
         return pixmap.save(image_path)
@@ -210,14 +533,18 @@ class JigsawGenerator(QMainWindow):
         self.ui = Ui_JigsawGenerator()
         self.ui.setupUi(self)
 
-        self.ui.pushButtonGenerate.released.connect(self.SLOT_generate)
+        self.ui.pushButtonGenerateImage.released.connect(self.SLOT_generate_image)
         self.ui.pushButtonLoadImage.released.connect(self.SLOT_load_image_dialog)
         self.ui.pushButtonSaveImage.released.connect(self.SLOT_save_image_dialog)
+        self.ui.pushButtonGenerateSvg.released.connect(self.SLOT_generate_svg)
+        self.ui.pushButtonPenColor.released.connect(self.SLOT_select_pen_color_dialog)
 
         self.x = self.ui.spinBoxX.value()
         self.y = self.ui.spinBoxY.value()
         self.core = JigsawGeneratorCore([self.x, self.y])
 
+        self.pen_color = QColor(Qt.white)
+
         self.load_image(os.path.dirname(os.path.realpath(__file__)) + "/image_template.jpg")
 
-        self.SLOT_generate()
+        self.SLOT_generate_image()
