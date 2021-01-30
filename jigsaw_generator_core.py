@@ -1,3 +1,22 @@
+############################################################################
+# JigsawGenerator                                                          #
+# Copyright (C) 2021  Bruno Bollos Correa                                  #
+#                                                                          #
+# This program is free software: you can redistribute it and/or modify     #
+# it under the terms of the GNU General Public License as published by     #
+# the Free Software Foundation, either version 3 of the License, or        #
+# (at your option) any later version.                                      #
+#                                                                          #
+# This program is distributed in the hope that it will be useful,          #
+# but WITHOUT ANY WARRANTY; without even the implied warranty of           #
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            #
+# GNU General Public License for more details.                             #
+#                                                                          #
+# You should have received a copy of the GNU General Public License        #
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.    #
+############################################################################
+
+
 from enum import Enum
 import numpy
 import random
@@ -63,23 +82,28 @@ class JigsawGeneratorCore:
         for i in range(self.matrix.shape[0]):
             for j in range(self.matrix.shape[1]):
                 if self.matrix[i, j].up == JigsawGeneratorCore.BorderType.INVALID:
-                    self.matrix[i, j].up = random.choice([JigsawGeneratorCore.BorderType.MASCULINE,
-                                                          JigsawGeneratorCore.BorderType.FEMININE])  # Feminine or Masculine
+                    self.matrix[i, j].up = random.choice(
+                        [JigsawGeneratorCore.BorderType.MASCULINE, JigsawGeneratorCore.BorderType.FEMININE]
+                    )
+                    # Feminine or Masculine
                     self.matrix[i, j - 1].down = self.inverse_border_type(self.matrix[i, j].up)
 
                 if self.matrix[i, j].down == JigsawGeneratorCore.BorderType.INVALID:
-                    self.matrix[i, j].down = random.choice([JigsawGeneratorCore.BorderType.MASCULINE,
-                                                            JigsawGeneratorCore.BorderType.FEMININE])
+                    self.matrix[i, j].down = random.choice(
+                        [JigsawGeneratorCore.BorderType.MASCULINE, JigsawGeneratorCore.BorderType.FEMININE]
+                    )
                     self.matrix[i, j + 1].up = self.inverse_border_type(self.matrix[i, j].down)
 
                 if self.matrix[i, j].left == JigsawGeneratorCore.BorderType.INVALID:
-                    self.matrix[i, j].left = random.choice([JigsawGeneratorCore.BorderType.MASCULINE,
-                                                            JigsawGeneratorCore.BorderType.FEMININE])
+                    self.matrix[i, j].left = random.choice(
+                        [JigsawGeneratorCore.BorderType.MASCULINE, JigsawGeneratorCore.BorderType.FEMININE]
+                    )
                     self.matrix[i - 1, j].right = self.inverse_border_type(self.matrix[i, j].left)
 
                 if self.matrix[i, j].right == JigsawGeneratorCore.BorderType.INVALID:
-                    self.matrix[i, j].right = random.choice([JigsawGeneratorCore.BorderType.MASCULINE,
-                                                             JigsawGeneratorCore.BorderType.FEMININE])
+                    self.matrix[i, j].right = random.choice(
+                        [JigsawGeneratorCore.BorderType.MASCULINE, JigsawGeneratorCore.BorderType.FEMININE]
+                    )
                     self.matrix[i + 1, j].left = self.inverse_border_type(self.matrix[i, j].right)
 
     def get_cell(self, cell_coordinates):
