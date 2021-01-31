@@ -1,2 +1,4 @@
 **/__pycache__
 ui_*
+build
+*.egg-*

@@ -17,9 +17,9 @@
 ############################################################################
 
 """
-Module jigsaw_generator
+Module jigsaw_generator.
 
-Contains the class JigsawGenerator
+Contains the class JigsawGenerator.
 """
 import os
 import random
