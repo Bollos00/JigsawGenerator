@@ -24,15 +24,17 @@ Contains the class JigsawGenerator.
 import os
 import random
 
-from PySide2.QtWidgets import QMainWindow, QFileDialog, QInputDialog, QColorDialog
-from PySide2.QtGui import QPixmap, QPainter, QPainterPath,  QColor
-from PySide2.QtCore import Qt, QPointF, QSize, QRect, QRectF
+from PySide2.QtWidgets import QMainWindow, QFileDialog, QInputDialog
+from PySide2.QtWidgets import QColorDialog, QApplication, QStyleFactory
+from PySide2.QtWidgets import QShortcut
+from PySide2.QtGui import QPixmap, QPainter, QPainterPath,  QColor, QPalette
+from PySide2.QtGui import QKeySequence
+from PySide2.QtCore import Qt, QPointF, QSize, QRect
 from PySide2.QtSvg import QSvgGenerator
-
 
 from ui_jigsaw_generator_main_window import Ui_JigsawGenerator
 from jigsaw_generator_core import JigsawGeneratorCore
-
+from smoothed_path import smoothed_path
 
 class JigsawGenerator(QMainWindow):
     """
@@ -98,7 +100,9 @@ class JigsawGenerator(QMainWindow):
         return painter
 
     @staticmethod
-    def paint_masculine_border(cell_coordinates, where, cell_width, cell_height, patterns, painter):
+    def paint_masculine_border(
+        cell_coordinates, where, cell_width, cell_height, patterns, painter, smooth_factor
+    ):
         """
         Draw the masculine border of one cell.
 
@@ -122,11 +126,13 @@ class JigsawGenerator(QMainWindow):
 
         painter: QPainter
             The QPainter element used to paint the borders
+
+        smooth_factor: float
         """
-        # TODO: Smooth the paths
+
         pattern = random.choice(patterns)
 
-        if pattern == "Triangle":
+        if "Triangle" in pattern:
             #          C  ---*
             #               / \
             #              /   \
@@ -194,13 +200,18 @@ class JigsawGenerator(QMainWindow):
                 E = QPointF(x, y_begin + cell_height)
 
             path = QPainterPath(A)
-            path.lineTo(B)
-            path.lineTo(C)
-            path.lineTo(D)
-            path.lineTo(E)
+
+            if "Rounded" in pattern:
+                smoothed_path(smooth_factor, [A, B, C, D, E], path)
+            else:
+                path.lineTo(B)
+                path.lineTo(C)
+                path.lineTo(D)
+                path.lineTo(E)
+
             painter.drawPath(path)
 
-        elif pattern == "Square":
+        elif "Square" in pattern:
             #         C * ________ * D
             #            |       |
             #            |       |
@@ -275,95 +286,100 @@ class JigsawGenerator(QMainWindow):
                 F = QPointF(x, y_begin + cell_height)
 
             path = QPainterPath(A)
-            path.lineTo(B)
-            path.lineTo(C)
-            path.lineTo(D)
-            path.lineTo(E)
-            path.lineTo(F)
+
+            if "Rounded" in pattern:
+                smoothed_path(smooth_factor, [A, B, C, D, E, F], path)
+            else:
+                path.lineTo(B)
+                path.lineTo(C)
+                path.lineTo(D)
+                path.lineTo(E)
+                path.lineTo(F)
+
             painter.drawPath(path)
 
-        elif pattern == "Circle":
-            A, B, C, D, E, F = None, None, None, None, None, None
-
-            # parameters necessary to make the borders different between
-            #  each other
-            b0, b1 = .3, .45
-            c0, c1 = .15, .25
-            e0, e1 = .55, .7
-            x0, x1 = -.05, .05
-            r0, r1 = (e1 - b0)/2, .5/2
-
-            if where == JigsawGeneratorCore.WhichBorder.DOWN:
-                y = (cell_coordinates[1] + 1)*cell_height
-                x_begin = cell_coordinates[0]*cell_width
-                A = QPointF(x_begin, y)
-                B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
-                            y + cell_height*random.uniform(x0, x1))
-                C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
-                            y + cell_height*random.uniform(c0, c1))
-                D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
-                            y + cell_height*random.uniform(c0, c1))
-                E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
-                            y + cell_height*random.uniform(x0, x1))
-                F = QPointF(x_begin + cell_width, y)
-
-            elif where == JigsawGeneratorCore.WhichBorder.UP:
-                y = cell_coordinates[1]*cell_height
-                x_begin = cell_coordinates[0]*cell_width
-                A = QPointF(x_begin, y)
-                B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
-                            y + cell_height*random.uniform(x0, x1))
-                C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
-                            y - cell_height*random.uniform(c0, c1))
-                D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
-                            y - cell_height*random.uniform(c0, c1))
-                E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
-                            y + cell_height*random.uniform(x0, x1))
-                F = QPointF(x_begin + cell_width, y)
-
-            elif where == JigsawGeneratorCore.WhichBorder.LEFT:
-                x = cell_coordinates[0]*cell_width
-                y_begin = cell_coordinates[1]*cell_height
-                A = QPointF(x, y_begin)
-                B = QPointF(x + cell_width*random.uniform(x0, x1),
-                            y_begin + cell_height*random.uniform(b0, b1))
-                C = QPointF(x - cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(b0, b1))
-                D = QPointF(x - cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(e0, e1))
-                E = QPointF(x + cell_width*random.uniform(x0, x1),
-                            y_begin + cell_height*random.uniform(e0, e1))
-                F = QPointF(x, y_begin + cell_height)
-
-            elif where == JigsawGeneratorCore.WhichBorder.RIGHT:
-                x = (cell_coordinates[0] + 1)*cell_width
-                y_begin = cell_coordinates[1]*cell_height
-                A = QPointF(x, y_begin)
-                B = QPointF(x + cell_width*random.uniform(x0, x1),
-                            y_begin + cell_height*random.uniform(b0, b1))
-                C = QPointF(x + cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(b0, b1))
-                D = QPointF(x + cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(e0, e1))
-                E = QPointF(x + cell_width*random.uniform(x0, x1),
-                            y_begin + cell_height*random.uniform(e0, e1))
-                F = QPointF(x, y_begin + cell_height)
-
-            path = QPainterPath(A)
-            path.lineTo(B)
-            path.lineTo(C)
-            # Connect point `C` with point `D` with an arc that has radius between
-            #  `r0` and `r1`
-            center = QPointF((C + D)/2)
-            radiusX = random.uniform(r0, r1)*cell_width
-            radiusY = random.uniform(r0, r1)*cell_height
-            rec = QRectF(center.x() - radiusX, center.y() - radiusY, 2*radiusX, 2*radiusY)
-
-            path.arcTo(rec, 60, 240)
-
-            path.lineTo(E)
-            path.lineTo(F)
-            painter.drawPath(path)
+        # elif "Circle" in pattern:
+        #     A, B, C, D, E, F = None, None, None, None, None, None
+        #
+        #     # parameters necessary to make the borders different between
+        #     #  each other
+        #     b0, b1 = .3, .45
+        #     c0, c1 = .15, .25
+        #     e0, e1 = .55, .7
+        #     x0, x1 = -.05, .05
+        #     r0, r1 = (e1 - b0)/2, .5/2
+        #
+        #     if where == JigsawGeneratorCore.WhichBorder.DOWN:
+        #         y = (cell_coordinates[1] + 1)*cell_height
+        #         x_begin = cell_coordinates[0]*cell_width
+        #         A = QPointF(x_begin, y)
+        #         B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+        #                     y + cell_height*random.uniform(x0, x1))
+        #         C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+        #                     y + cell_height*random.uniform(c0, c1))
+        #         D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+        #                     y + cell_height*random.uniform(c0, c1))
+        #         E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+        #                     y + cell_height*random.uniform(x0, x1))
+        #         F = QPointF(x_begin + cell_width, y)
+        #
+        #     elif where == JigsawGeneratorCore.WhichBorder.UP:
+        #         y = cell_coordinates[1]*cell_height
+        #         x_begin = cell_coordinates[0]*cell_width
+        #         A = QPointF(x_begin, y)
+        #         B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+        #                     y + cell_height*random.uniform(x0, x1))
+        #         C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
+        #                     y - cell_height*random.uniform(c0, c1))
+        #         D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+        #                     y - cell_height*random.uniform(c0, c1))
+        #         E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
+        #                     y + cell_height*random.uniform(x0, x1))
+        #         F = QPointF(x_begin + cell_width, y)
+        #
+        #     elif where == JigsawGeneratorCore.WhichBorder.LEFT:
+        #         x = cell_coordinates[0]*cell_width
+        #         y_begin = cell_coordinates[1]*cell_height
+        #         A = QPointF(x, y_begin)
+        #         B = QPointF(x + cell_width*random.uniform(x0, x1),
+        #                     y_begin + cell_height*random.uniform(b0, b1))
+        #         C = QPointF(x - cell_width*random.uniform(c0, c1),
+        #                     y_begin + cell_height*random.uniform(b0, b1))
+        #         D = QPointF(x - cell_width*random.uniform(c0, c1),
+        #                     y_begin + cell_height*random.uniform(e0, e1))
+        #         E = QPointF(x + cell_width*random.uniform(x0, x1),
+        #                     y_begin + cell_height*random.uniform(e0, e1))
+        #         F = QPointF(x, y_begin + cell_height)
+        #
+        #     elif where == JigsawGeneratorCore.WhichBorder.RIGHT:
+        #         x = (cell_coordinates[0] + 1)*cell_width
+        #         y_begin = cell_coordinates[1]*cell_height
+        #         A = QPointF(x, y_begin)
+        #         B = QPointF(x + cell_width*random.uniform(x0, x1),
+        #                     y_begin + cell_height*random.uniform(b0, b1))
+        #         C = QPointF(x + cell_width*random.uniform(c0, c1),
+        #                     y_begin + cell_height*random.uniform(b0, b1))
+        #         D = QPointF(x + cell_width*random.uniform(c0, c1),
+        #                     y_begin + cell_height*random.uniform(e0, e1))
+        #         E = QPointF(x + cell_width*random.uniform(x0, x1),
+        #                     y_begin + cell_height*random.uniform(e0, e1))
+        #         F = QPointF(x, y_begin + cell_height)
+        #
+        #     path = QPainterPath(A)
+        #     path.lineTo(B)
+        #     path.lineTo(C)
+        #     # Connect point `C` with point `D` with an arc that has radius between
+        #     #  `r0` and `r1`
+        #     center = QPointF((C + D)/2)
+        #     radiusX = random.uniform(r0, r1)*cell_width
+        #     radiusY = random.uniform(r0, r1)*cell_height
+        #     rec = QRectF(center.x() - radiusX, center.y() - radiusY, 2*radiusX, 2*radiusY)
+        #
+        #     path.arcTo(rec, 60, 240)
+        #
+        #     path.lineTo(E)
+        #     path.lineTo(F)
+        #     painter.drawPath(path)
 
         return painter
 
@@ -389,7 +405,24 @@ class JigsawGenerator(QMainWindow):
 
         JigsawGenerator.draw_borders(pixmap.width() - 1, pixmap.height() - 1, painter)
 
-        patterns = ["Square", "Triangle"]
+        patterns = list()
+
+        if self.ui.checkBoxTriangleBorders.isChecked():
+            patterns.append("Triangle")
+        if self.ui.checkBoxTriangleRounded.isChecked():
+            patterns.append("Triangle Rounded")
+        if self.ui.checkBoxSquaredBorders.isChecked():
+            patterns.append("Square")
+        if self.ui.checkBoxSquaredRounded.isChecked():
+            patterns.append("Square Rounded")
+
+        if not list:
+            print("Select at least one border pattern")
+            painter.end()
+            self.ui.labelImage.setPixmap(pixmap)
+            return
+
+        rounded_factor = self.ui.doubleSpinBoxSmoothFactor.value()
 
         for i in range(self.x):
             for j in range(self.y):
@@ -398,22 +431,22 @@ class JigsawGenerator(QMainWindow):
                 if cell.up == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.UP,
-                        self.cell_width, self.cell_height, patterns, painter
+                        self.cell_width, self.cell_height, patterns, painter, rounded_factor
                     )
                 if cell.down == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.DOWN,
-                        self.cell_width, self.cell_height, patterns, painter
+                        self.cell_width, self.cell_height, patterns, painter, rounded_factor
                     )
                 if cell.left == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.LEFT,
-                        self.cell_width, self.cell_height, patterns, painter
+                        self.cell_width, self.cell_height, patterns, painter, rounded_factor
                     )
                 if cell.right == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.RIGHT,
-                        self.cell_width, self.cell_height, patterns, painter
+                        self.cell_width, self.cell_height, patterns, painter, rounded_factor
                     )
 
         painter.end()
@@ -453,7 +486,23 @@ class JigsawGenerator(QMainWindow):
 
         JigsawGenerator.draw_borders(width, height, painter)
 
-        patterns = ["Square", "Triangle"]
+        patterns = list()
+
+        if self.ui.checkBoxTriangleBorders.isChecked():
+            patterns.append("Triangle")
+        if self.ui.checkBoxTriangleRounded.isChecked():
+            patterns.append("Triangle Rounded")
+        if self.ui.checkBoxSquaredBorders.isChecked():
+            patterns.append("Square")
+        if self.ui.checkBoxSquaredRounded.isChecked():
+            patterns.append("Square Rounded")
+
+        if not list:
+            print("Select at least one border pattern")
+            return
+
+        rounded_factor = self.ui.doubleSpinBoxSmoothFactor.value()
+
         cell_width = float(width)/self.x
         cell_height = float(height)/self.y
 
@@ -464,22 +513,22 @@ class JigsawGenerator(QMainWindow):
                 if cell.up == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.UP,
-                        cell_width, cell_height, patterns, painter
+                        cell_width, cell_height, patterns, painter, rounded_factor
                     )
                 if cell.down == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.DOWN,
-                        cell_width, cell_height, patterns, painter
+                        cell_width, cell_height, patterns, painter, rounded_factor
                     )
                 if cell.left == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.LEFT,
-                        cell_width, cell_height, patterns, painter
+                        cell_width, cell_height, patterns, painter, rounded_factor
                     )
                 if cell.right == JigsawGeneratorCore.BorderType.MASCULINE:
                     JigsawGenerator.paint_masculine_border(
                         [i, j], JigsawGeneratorCore.WhichBorder.RIGHT,
-                        cell_width, cell_height, patterns, painter
+                        cell_width, cell_height, patterns, painter, rounded_factor
                     )
 
         painter.end()
@@ -541,8 +590,8 @@ class JigsawGenerator(QMainWindow):
             filter="Images (*.png *.jpg *.jpeg *..gif *.bpm)"
         )
 
-        if file_path and self.load_image(file_path):
-            self.SLOT_generate()
+        if file_path:
+            self.load_image(file_path)
 
     def SLOT_save_image_dialog(self):
         """
@@ -565,7 +614,6 @@ class JigsawGenerator(QMainWindow):
 
         if file_path:
             self.save_image(file_path)
-
 
     def SLOT_select_pen_color_dialog(self):
         """
@@ -633,6 +681,55 @@ class JigsawGenerator(QMainWindow):
 
         return pixmap.save(image_path)
 
+    def set_application_theme(self, theme_name):
+        """
+        Set the GUI theme with the theme passed
+
+        Parameters
+        ----------
+        self: JigsawGenerator
+            Instance of the class
+
+        theme_name: str
+            Which theme (can be "Fusion Dark" and "Fusion Light")
+        """
+        if theme_name == "Fusion Dark":
+            QApplication.instance().setStyle(QStyleFactory.create("Fusion"))
+            darkPalette = QPalette()
+            darkPalette.setColor(QPalette.BrightText,      Qt.red)
+            darkPalette.setColor(QPalette.WindowText,      Qt.white)
+            darkPalette.setColor(QPalette.ToolTipBase,     Qt.white)
+            darkPalette.setColor(QPalette.ToolTipText,     Qt.white)
+            darkPalette.setColor(QPalette.Text,            Qt.white)
+            darkPalette.setColor(QPalette.ButtonText,      Qt.white)
+            darkPalette.setColor(QPalette.HighlightedText, Qt.black)
+            darkPalette.setColor(QPalette.Window,          QColor(53, 53, 53))
+            darkPalette.setColor(QPalette.Base,            QColor(25, 25, 25))
+            darkPalette.setColor(QPalette.AlternateBase,   QColor(53, 53, 53))
+            darkPalette.setColor(QPalette.Button,          QColor(53, 53, 53))
+            darkPalette.setColor(QPalette.Link,            QColor(42, 130, 218))
+            darkPalette.setColor(QPalette.Highlight,       QColor(42, 130, 218))
+            QApplication.instance().setPalette(darkPalette)
+
+        elif theme_name == "Fusion Light":
+            QApplication.instance().setStyle(QStyleFactory.create("Fusion"))
+            lightPalette = QPalette()
+            lightPalette.setColor(QPalette.BrightText,      Qt.cyan)
+            lightPalette.setColor(QPalette.WindowText,      Qt.black)
+            lightPalette.setColor(QPalette.ToolTipBase,     Qt.black)
+            lightPalette.setColor(QPalette.ToolTipText,     Qt.black)
+            lightPalette.setColor(QPalette.Text,            Qt.black)
+            lightPalette.setColor(QPalette.ButtonText,      Qt.black)
+            lightPalette.setColor(QPalette.HighlightedText, Qt.white)
+            lightPalette.setColor(QPalette.Window,          QColor(202, 202, 202))
+            lightPalette.setColor(QPalette.Base,            QColor(228, 228, 228))
+            lightPalette.setColor(QPalette.AlternateBase,   QColor(202, 202, 202))
+            lightPalette.setColor(QPalette.Button,          QColor(202, 202, 202))
+            lightPalette.setColor(QPalette.Link,            QColor(213, 125, 37))
+            lightPalette.setColor(QPalette.Highlight,       QColor(42, 130, 218))
+
+            QApplication.instance().setPalette(lightPalette)
+
     def __init__(self):
         super(JigsawGenerator, self).__init__()
 
@@ -645,12 +742,17 @@ class JigsawGenerator(QMainWindow):
         self.ui.pushButtonGenerateSvg.released.connect(self.SLOT_generate_svg)
         self.ui.pushButtonPenColor.released.connect(self.SLOT_select_pen_color_dialog)
 
+        shortcut_close = QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Q), self)
+        shortcut_close.activated.connect(self.close)
+
         self.x = self.ui.spinBoxX.value()
         self.y = self.ui.spinBoxY.value()
         self.core = JigsawGeneratorCore([self.x, self.y])
 
         self.pen_color = QColor(Qt.white)
 
-        self.load_image(os.path.dirname(os.path.realpath(__file__)) + "/image_template.jpg")
+        self.load_image(os.path.dirname(os.path.realpath(__file__)) + "/image_template.png")
 
         self.SLOT_generate_image()
+
+        self.set_application_theme("Fusion Dark")
