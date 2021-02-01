@@ -20,9 +20,12 @@
 Auxiliar module that implements a simple algorithm that assists on the creation of smoothed paths.
 """
 import numpy
+from jigsaw_generator_info import Core, Gui
 
-from PySide2.QtCore import QPointF
-from PySide2.QtGui import QPainterPath
+QPointF = Core.QPointF
+QPainterPath = Gui.QPainterPath
+# from PySide2.QtCore import QPointF
+# from PySide2.QtGui import QPainterPath
 
 # Source:
 # https://stackoverflow.com/questions/40764011/how-to-draw-a-smooth-curved-line-that-goes-through-several-points-in-qt

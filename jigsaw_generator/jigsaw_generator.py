@@ -23,18 +23,27 @@ Contains the class JigsawGenerator.
 """
 import os
 import random
-
-from PySide2.QtWidgets import QMainWindow, QFileDialog, QInputDialog
-from PySide2.QtWidgets import QColorDialog, QApplication, QStyleFactory
-from PySide2.QtWidgets import QShortcut
-from PySide2.QtGui import QPixmap, QPainter, QPainterPath,  QColor, QPalette
-from PySide2.QtGui import QKeySequence
-from PySide2.QtCore import Qt, QPointF, QSize, QRect
-from PySide2.QtSvg import QSvgGenerator
+from jigsaw_generator_info import Widgets, Core, Gui, Svg, PYSIDE_VERSION
 
 from ui_jigsaw_generator_main_window import Ui_JigsawGenerator
 from jigsaw_generator_core import JigsawGeneratorCore
 from smoothed_path import smoothed_path
+
+QMainWindow, QFileDialog, QInputDialog = Widgets.QMainWindow, Widgets.QFileDialog, Widgets.QInputDialog
+QColorDialog, QApplication, QStyleFactory = Widgets.QColorDialog, Widgets.QApplication, Widgets.QStyleFactory
+QShortcut = Gui.QShortcut if int(PYSIDE_VERSION) >= 6 else Widgets.QShortcut
+QPixmap, QPainter, QPainterPath = Gui.QPixmap, Gui.QPainter, Gui.QPainterPath
+QColor, QPalette, QKeySequence = Gui.QColor, Gui.QPalette, Gui.QKeySequence
+Qt, QPointF, QSize, QRect = Core.Qt, Core.QPointF, Core.QSize, Core.QRect
+QSvgGenerator = Svg.QSvgGenerator
+# from PySide2.QtWidgets import QMainWindow, QFileDialog, QInputDialog
+# from PySide2.QtWidgets import QColorDialog, QApplication, QStyleFactory
+# from PySide2.QtWidgets import QShortcut
+# from PySide2.QtGui import QPixmap, QPainter, QPainterPath,  QColor, QPalette
+# from PySide2.QtGui import QKeySequence
+# from PySide2.QtCore import Qt, QPointF, QSize, QRect
+# from PySide2.QtSvg import QSvgGenerator
+
 
 class JigsawGenerator(QMainWindow):
     """
@@ -401,7 +410,7 @@ class JigsawGenerator(QMainWindow):
         painter = QPainter(pixmap)
         painter.setPen(self.pen_color)
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
-        painter.setRenderHint(QPainter.HighQualityAntialiasing, True)
+        painter.setRenderHint(QPainter.Antialiasing, True)
 
         JigsawGenerator.draw_borders(pixmap.width() - 1, pixmap.height() - 1, painter)
 
@@ -587,7 +596,7 @@ class JigsawGenerator(QMainWindow):
         file_path, filter = QFileDialog.getOpenFileName(
             parent=self,
             caption="Load Image",
-            filter="Images (*.png *.jpg *.jpeg *..gif *.bpm)"
+            filter="Images (*.png *.jpg *.jpeg *.gif *.bmp *.svg)"
         )
 
         if file_path:
@@ -608,8 +617,8 @@ class JigsawGenerator(QMainWindow):
 
         file_path, filter = QFileDialog.getSaveFileName(
             parent=self,
-            caption="Save Image",
-            filter="Images (*.png *.jpg *.jpeg *..gif *.bpm)"
+            caption="Save Image as...",
+            filter="Images (*.png *.jpg *.jpeg *.gif *.bmp *.svg)"
         )
 
         if file_path:

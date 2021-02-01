@@ -17,9 +17,10 @@
 ############################################################################
 
 import sys
-
-from PySide2.QtWidgets import QApplication
+from jigsaw_generator_info import PySide
 from jigsaw_generator import JigsawGenerator
+
+QApplication = PySide.QtWidgets.QApplication
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
