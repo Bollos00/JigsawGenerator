@@ -233,9 +233,12 @@ class JigsawGenerator(QMainWindow):
 
             # parameters necessary to make the borders different between
             #  each other
-            b0, b1 = .3, .45
-            c0, c1 = .15, .25
-            e0, e1 = .55, .7
+            b0, b1 = .30, .40
+            c0, c1 = .25, .35
+            c2, c3 = .15, .25
+            d0, d1 = .65, .75
+            d2, d3 = c2, c3
+            e0, e1 = .60, .70
             x0, x1 = -.05, .05
 
             if where == JigsawGeneratorCore.WhichBorder.DOWN:
@@ -244,10 +247,10 @@ class JigsawGenerator(QMainWindow):
                 A = QPointF(x_begin, y)
                 B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
                             y + cell_height*random.uniform(x0, x1))
-                C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
-                            y + cell_height*random.uniform(c0, c1))
-                D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
-                            y + cell_height*random.uniform(c0, c1))
+                C = QPointF(x_begin + cell_width*random.uniform(c0, c1),
+                            y + cell_height*random.uniform(c2, c3))
+                D = QPointF(x_begin + cell_width*random.uniform(d0, d1),
+                            y + cell_height*random.uniform(d2, d3))
                 E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
                             y + cell_height*random.uniform(x0, x1))
                 F = QPointF(x_begin + cell_width, y)
@@ -258,10 +261,10 @@ class JigsawGenerator(QMainWindow):
                 A = QPointF(x_begin, y)
                 B = QPointF(x_begin + cell_width*random.uniform(b0, b1),
                             y + cell_height*random.uniform(x0, x1))
-                C = QPointF(x_begin + cell_width*random.uniform(b0, b1),
-                            y - cell_height*random.uniform(c0, c1))
-                D = QPointF(x_begin + cell_width*random.uniform(e0, e1),
-                            y - cell_height*random.uniform(c0, c1))
+                C = QPointF(x_begin + cell_width*random.uniform(c0, c1),
+                            y - cell_height*random.uniform(c2, c3))
+                D = QPointF(x_begin + cell_width*random.uniform(d0, d1),
+                            y - cell_height*random.uniform(d2, d3))
                 E = QPointF(x_begin + cell_width*random.uniform(e0, e1),
                             y + cell_height*random.uniform(x0, x1))
                 F = QPointF(x_begin + cell_width, y)
@@ -272,10 +275,10 @@ class JigsawGenerator(QMainWindow):
                 A = QPointF(x, y_begin)
                 B = QPointF(x + cell_width*random.uniform(x0, x1),
                             y_begin + cell_height*random.uniform(b0, b1))
-                C = QPointF(x - cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(b0, b1))
-                D = QPointF(x - cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(e0, e1))
+                C = QPointF(x - cell_width*random.uniform(c2, c3),
+                            y_begin + cell_height*random.uniform(c0, c1))
+                D = QPointF(x - cell_width*random.uniform(d2, d3),
+                            y_begin + cell_height*random.uniform(d0, d1))
                 E = QPointF(x + cell_width*random.uniform(x0, x1),
                             y_begin + cell_height*random.uniform(e0, e1))
                 F = QPointF(x, y_begin + cell_height)
@@ -286,10 +289,10 @@ class JigsawGenerator(QMainWindow):
                 A = QPointF(x, y_begin)
                 B = QPointF(x + cell_width*random.uniform(x0, x1),
                             y_begin + cell_height*random.uniform(b0, b1))
-                C = QPointF(x + cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(b0, b1))
-                D = QPointF(x + cell_width*random.uniform(c0, c1),
-                            y_begin + cell_height*random.uniform(e0, e1))
+                C = QPointF(x + cell_width*random.uniform(c2, c3),
+                            y_begin + cell_height*random.uniform(c0, c1))
+                D = QPointF(x + cell_width*random.uniform(d2, d3),
+                            y_begin + cell_height*random.uniform(d0, d1))
                 E = QPointF(x + cell_width*random.uniform(x0, x1),
                             y_begin + cell_height*random.uniform(e0, e1))
                 F = QPointF(x, y_begin + cell_height)
